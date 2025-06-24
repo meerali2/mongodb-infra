@@ -1,12 +1,7 @@
-# mongod.conf
-
-net:
-  port: {{ mongodb_port }}
-  bindIp: {{ mongodb_bind_ip }}
-
-replication:
-  replSetName: {{ mongodb_replset }}
-
-storage:
-  dbPath: /data/db
-
+rs.initiate({
+  _id: "{{ mongodb_replset }}",
+  members: [
+    { _id: 0, host: "{{ mongodb_master_ip }}:{{ mongodb_port }}" },
+    { _id: 1, host: "{{ mongodb_replica_ip }}:{{ mongodb_port }}" }
+  ]
+});
