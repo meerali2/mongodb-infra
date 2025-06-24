@@ -2,7 +2,7 @@
 - name: Update apt cache
   apt:
     update_cache: yes
-    
+
 - name: Install MongoDB
   apt:
     name: mongodb-org
@@ -38,18 +38,18 @@
     port: "{{ mongodb_port }}"
     timeout: 30
 
-- name: Get Mongodb Master IP
+- name: Set MongoDB master and replica IPs
   set_fact:
-    mongodb_master_ip: "{{ groups['_infra_server'] | map('extract', hostvars, ['tags', 'Name']) | zip(groups['_infra_server']) | selectattr('0', 'equalto', 'mongodb-server-0') | map(attribute='1') | map('extract', hostvars, ['private_ip_address']) | first }}"
+    mongodb_master_ip: "{{ hostvars[groups['infra-server'][0]].private_ip_address }}"
+    mongodb_replica_ip: "{{ hostvars[groups['infra-server'][1]].private_ip_address }}"
 
-- name: Get Mongodb Replica IP
-  set_fact:
-    mongodb_replica_ip: "{{ groups['_infra_server'] | map('extract', hostvars, ['tags', 'Name']) | zip(groups['_infra_server']) | selectattr('0', 'equalto', 'mongodb-server-1') | map(attribute='1') | map('extract', hostvars, ['private_ip_address']) | first }}"
+- name: Create replica set initiation script
+  template:
+    src: rs_init.js.j2
+    dest: /tmp/rs_init.js
 
-
-- name: Add this node to replica set via primary
+- name: Initiate MongoDB replica set
   shell: |
-    mongo --host {{ mongodb_master_ip }} --eval 'rs.add("{{ mongodb_replica_ip }}:{{ mongodb_port }}")'
+    mongo --quiet --host {{ mongodb_master_ip }} < /tmp/rs_init.js || echo "Replica set may already be configured"
   delegate_to: "{{ mongodb_master_ip }}"
   run_once: true
-
