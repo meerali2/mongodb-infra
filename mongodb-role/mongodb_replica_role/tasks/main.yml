@@ -52,6 +52,6 @@
 
 - name: Initiate MongoDB replica set
   shell: |
-    mongo --quiet --host {{ mongodb_master_ip }} < /tmp/rs_init.js || echo "Replica set may already be configured"
+    mongosh "mongodb://{{ mongodb_master_ip }}:27017" --quiet < /tmp/rs_init.js || echo "Replica set may already be configured"
   delegate_to: "{{ mongodb_master_ip }}"
   run_once: true
