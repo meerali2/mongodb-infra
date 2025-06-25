@@ -19,7 +19,7 @@
 
 - name: Copy mongod.conf template
   template:
-    src: rs_init.js.j2
+    src: mongod.conf.j2
     dest: /etc/mongod.conf
     owner: root
     group: root
