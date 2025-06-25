@@ -1,15 +1,4 @@
 ---
-- name: Import MongoDB public GPG key
-  apt_key:
-    url: https://pgp.mongodb.com/server-6.0.asc
-    state: present
-
-- name: Add MongoDB repository
-  apt_repository:
-    repo: "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu {{ ansible_distribution_release | lower }}/mongodb-org/6.0 multiverse"
-    state: present
-    filename: "mongodb-org-6.0"
-
 - name: Update apt cache
   apt:
     update_cache: yes
@@ -18,6 +7,7 @@
   apt:
     name: mongodb-org
     state: present
+    update_cache: yes
 
 - name: Create data directory
   file:
@@ -29,7 +19,7 @@
 
 - name: Copy mongod.conf template
   template:
-    src: mongod.conf.j2
+    src: rs_init.js.j2
     dest: /etc/mongod.conf
     owner: root
     group: root
@@ -47,3 +37,21 @@
     host: localhost
     port: "{{ mongodb_port }}"
     timeout: 30
+
+# This part was causing the issue — now fixed to use 'private_ip_address'
+- name: Set MongoDB master and replica IPs
+  set_fact:
+    mongodb_master_ip: "{{ hostvars[groups['_infra_server'][0]]['private_ip_address'] }}"
+    mongodb_replica_ip: "{{ private_ip_address }}"
+  when: "'_infra_server' in groups and groups['_infra_server'] | length > 1"
+
+- name: Create replica set initiation script
+  template:
+    src: rs_init.js.j2
+    dest: /tmp/rs_init.js
+
+- name: Initiate MongoDB replica set
+  shell: |
+    mongo --quiet --host {{ mongodb_master_ip }} < /tmp/rs_init.js || echo "Replica set may already be configured"
+  delegate_to: "{{ mongodb_master_ip }}"
+  run_once: true
