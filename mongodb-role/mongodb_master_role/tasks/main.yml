@@ -66,7 +66,7 @@
     owner: root
     group: root
     mode: '0644'
-  notify: restart mongodb
+  #notify: restart mongodb
 
 - name: Ensure MongoDB is running and enabled
   service:
