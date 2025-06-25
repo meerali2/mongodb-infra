@@ -50,8 +50,18 @@
     src: rs_init.js.j2
     dest: /tmp/rs_init.js
 
+- name: Wait until MongoDB is ready to accept replica set initiation
+  shell: |
+    mongosh --quiet --eval "db.adminCommand('ping')" || exit 1
+  register: ping_result
+  until: ping_result.rc == 0
+  retries: 10
+  delay: 5
+  delegate_to: "{{ mongodb_master_ip }}"
+  run_once: true
+
 - name: Initiate MongoDB replica set
   shell: |
-    mongosh "mongodb://{{ mongodb_master_ip }}:27017" --quiet < /tmp/rs_init.js || echo "Replica set may already be configured"
+    mongosh --quiet --host {{ mongodb_master_ip }} < /tmp/rs_init.js || echo "Replica set may already be configured"
   delegate_to: "{{ mongodb_master_ip }}"
   run_once: true
